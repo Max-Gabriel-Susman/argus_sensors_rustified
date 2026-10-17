@@ -3,4 +3,13 @@ name = "argus_sensors_rustified"
 version = "0.1.0"
 edition = "2024"
 
+# One [[bin]] per node, like add_executable() in CMake.
+[[bin]]
+name = "talker"
+path = "src/talker.rs"
+
 [dependencies]
+# The ROS 2 client library, from crates.io
+rclrs = "0.8"
+# Exposes the ROS message packages as ros_env::<package>
+ros-env = "0.3"
