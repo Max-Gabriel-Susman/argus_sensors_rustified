@@ -43,7 +43,12 @@ fn main() -> Result<(), RclrsError> {
     let context = Context::default_from_env()?;
     let mut executor = context.create_basic_executor();
 
-    let talker =
+    let talker = Talker::new(&executor)?;
+    log_info!(talker.node.logger(), "talker started");
+
+    let result = executor.spin(SpinOptions::default()).first_error();
 
     println!("Argus Sensors online.");
+
+    return result;
 }
