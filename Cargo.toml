@@ -16,7 +16,7 @@ ros-env = "0.3"
 
 [[bin]]
 name = "listener"
-path = "src/listener.rs
+path = "src/listener.rs"
 
 [package.metadata.ros]
-instal_to_share = ["launch"]
+install_to_share = ["launch"]

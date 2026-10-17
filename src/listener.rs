@@ -11,14 +11,14 @@ impl Listener {
         let node = executor.create_node("listener")?;
 
         let callback_node = node.clone();
-        let Subscription = node.create_subscription::<StringMsg, _>(
+        let subscription = node.create_subscription::<StringMsg, _>(
             "chatter".keep_last(10),
             move |msg: StringMsg| {
-                log_info!(callback_node.logger(), "I heard: '{}", msg.data);
+                log_info!(callback_node.logger(), "I heard: '{}'", msg.data);
             },
         )?;
 
-        Ok(self {
+        Ok(Self {
             node,
             _subscription: subscription,
         })

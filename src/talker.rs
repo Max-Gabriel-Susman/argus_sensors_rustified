@@ -10,7 +10,7 @@ struct Talker {
 }
 
 impl Talker {
-    fn new(executor: &executor) -> Result<Self, RclrsError> {
+    fn new(executor: &Executor) -> Result<Self, RclrsError> {
         let node = executor.create_node("talker")?;
 
         let publisher = node.create_publisher::<StringMsg>("chatter".keep_last(10))?;
