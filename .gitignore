@@ -1,1 +1,7 @@
 /target
+
+# ROS build artifacts, these should be in the workspace directory two levels up.
+build/
+install/
+# launch/ we're using a different launch directory here.
+log/

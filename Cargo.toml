@@ -13,3 +13,10 @@ path = "src/talker.rs"
 rclrs = "0.8"
 # Exposes the ROS message packages as ros_env::<package>
 ros-env = "0.3"
+
+[[bin]]
+name = "listener"
+path = "src/listener.rs
+
+[package.metadata.ros]
+instal_to_share = ["launch"]

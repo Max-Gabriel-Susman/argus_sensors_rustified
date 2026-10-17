@@ -1,0 +1,6 @@
+
+<launch>
+  <!-- pkg is the package name, exec is a [[bin]] name from Cargo.toml -->
+  <node pkg="argus_sensors_rustified" exec="talker" output="screen"/>
+  <node pkg="argus_sensors_rustified" exec="listener" output="screen"/>
+</launch>
