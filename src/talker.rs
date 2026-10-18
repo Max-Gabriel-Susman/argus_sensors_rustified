@@ -50,5 +50,5 @@ fn main() -> Result<(), RclrsError> {
 
     println!("Argus Sensors online.");
 
-    result;
+    result
 }
