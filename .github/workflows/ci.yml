@@ -1,0 +1,105 @@
+# Builds and tests argus_sensors_rustified on ROS 2 Humble the same way it is
+# built locally (colcon + colcon-ros-cargo against the Humble apt packages),
+# then launches the talker and listener and checks that they talk.
+name: argus_sensors_rustified package CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  # Weekly run: the Rust message bindings come from the Humble apt packages and
+  # the crates from crates.io, so either can change while this repo doesn't.
+  schedule:
+    - cron: '23 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A newer push to the same branch cancels the run still in progress.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    container:
+      # Official image: Ubuntu 22.04 with ros-humble-ros-base, colcon and rosdep.
+      image: ros:humble-ros-base-jammy
+    env:
+      DEBIAN_FRONTEND: noninteractive
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          # colcon finds packages under src/ in the workspace.
+          path: src/argus_sensors_rustified
+          persist-credentials: false
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      # First because it is fast and needs no ROS.
+      - name: Check formatting
+        run: cargo fmt --manifest-path src/argus_sensors_rustified/Cargo.toml --check
+
+      - name: Update ROS packages and install build tools
+        run: |
+          apt-get update
+          # Get the latest Humble sync, which has the Rust message bindings.
+          apt-get dist-upgrade -y
+          # example_interfaces and test_msgs are the workaround from the
+          # rclrs README (ros2-rust/ros2_rust#557).
+          apt-get install -y --no-install-recommends python3-pip \
+            ros-humble-example-interfaces ros-humble-test-msgs
+          pip3 install colcon-ros-cargo
+
+      - name: Check Humble's Rust message bindings
+        run: |
+          if ! grep -q 'include = true' /opt/ros/humble/share/std_msgs/rust/Cargo.toml; then
+            echo "::error::/opt/ros/humble has no Rust message bindings, so ros-env cannot find std_msgs"
+            exit 1
+          fi
+
+      - name: Install ROS dependencies from package.xml
+        run: |
+          source /opt/ros/humble/setup.bash
+          rosdep update
+          rosdep install --from-paths src --ignore-src -y
+
+      - name: Clippy (warnings are errors)
+        run: |
+          source /opt/ros/humble/setup.bash
+          cargo clippy --manifest-path src/argus_sensors_rustified/Cargo.toml --all-targets -- -D warnings
+
+      - name: Build
+        run: |
+          source /opt/ros/humble/setup.bash
+          colcon build --packages-select argus_sensors_rustified --event-handlers console_direct+
+
+      # colcon test runs cargo test and cargo fmt --check for ament_cargo packages.
+      - name: Test
+        run: |
+          source /opt/ros/humble/setup.bash
+          colcon test --packages-select argus_sensors_rustified --event-handlers console_direct+
+          colcon test-result --verbose
+
+      # Runs the launch file for 20 s and passes if the listener logged a message
+      # from the talker. Update the grep if the message text changes.
+      - name: Smoke test (listener hears the talker)
+        env:
+          PYTHONUNBUFFERED: 1
+        run: |
+          source install/setup.bash
+          timeout -s INT -k 10 20 ros2 launch argus_sensors_rustified argus_sensors_rustified.launch.xml > launch.log 2>&1 || true
+          cat launch.log
+          grep -q "I heard: 'Hello, world!" launch.log
