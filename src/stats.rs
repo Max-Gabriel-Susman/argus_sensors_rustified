@@ -25,4 +25,5 @@ impl fmt::Display for FrameCounts {
     }
 }
 
+#[cfg(test)]
 mod tests {}
